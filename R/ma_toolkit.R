@@ -186,6 +186,52 @@ ma_median_to_mean_df <- function(df, method = "qe") {
 }
 
 # -----------------------------------------------------------------------------
+# 5b. CLEAN BAUJAT AND SROC PLOTS
+#     ma_baujat(): labels only the studies that stand out, so labels never pile
+#                  up at the origin. Change the cut-offs with x_cut / y_cut.
+#     ma_sroc():   bivariate (Reitsma) SROC with study points sized by n,
+#                  confidence + prediction regions, legend and pooled estimates.
+# -----------------------------------------------------------------------------
+ma_baujat <- function(m, x_cut = NULL, y_cut = NULL, bg = "firebrick", ...) {
+  op <- par(cex.lab = 1.1, font.lab = 2); on.exit(par(op))
+  bj <- meta::baujat(m, bg = bg, cex = 1.3, studlab = FALSE, ...)
+  if (is.null(x_cut)) x_cut <- max(2, 0.25 * max(bj$x))
+  if (is.null(y_cut)) y_cut <- 0.25 * max(bj$y)
+  flag <- bj$x > x_cut | bj$y > y_cut
+  if (any(flag)) text(bj$x[flag], bj$y[flag], bj$studlab[flag],
+                      pos = ifelse(bj$x[flag] > 0.6 * max(bj$x), 2, 4),
+                      cex = 0.9, font = 2)
+  if (any(!flag)) legend("topleft", bty = "n", cex = 0.85,
+                         legend = "Unlabelled points: studies with little impact")
+  invisible(bj)
+}
+
+ma_sroc <- function(fit, data, main = "Summary ROC curve (bivariate model)",
+                    col = "steelblue") {
+  s   <- summary(fit)$coefficients
+  se  <- s["sensitivity", c(1, 5, 6)]
+  fp  <- s["false pos. rate", c(1, 5, 6)]
+  auc <- mada::AUC(fit)$AUC
+  n   <- with(data, TP + FN + FP + TN)
+  op  <- par(mar = c(4.5, 4.5, 3, 1), las = 1); on.exit(par(op))
+  plot(fit, xlim = c(0, 1), ylim = c(0, 1), sroclwd = 2, predict = TRUE, ann = FALSE)
+  title(xlab = "1 - Specificity (false positive rate)", ylab = "Sensitivity", main = main)
+  abline(0, 1, lty = 3, col = "gray60")
+  points(mada::fpr(data), mada::sens(data), pch = 21, bg = col, col = "white",
+         cex = 0.6 + 1.6 * sqrt(n / max(n)))
+  legend("bottomright", bty = "n", cex = 0.85,
+         legend = c("Individual studies (size ~ n)", "Summary estimate",
+                    "95% confidence region", "95% prediction region", "SROC curve"),
+         pch = c(21, 1, NA, NA, NA), pt.bg = c(col, NA, NA, NA, NA),
+         col = c("white", "black", "black", "black", "black"),
+         lty = c(NA, NA, 1, 3, 1), lwd = c(NA, NA, 1, 1, 2))
+  text(0.97, 0.42, adj = 1, cex = 0.85, sprintf(
+    "Sensitivity %.2f (%.2f-%.2f)\nSpecificity %.2f (%.2f-%.2f)\nAUC %.2f",
+    se[1], se[2], se[3], 1 - fp[1], 1 - fp[3], 1 - fp[2], auc))
+  invisible(fit)
+}
+
+# -----------------------------------------------------------------------------
 # 6. SENSITIVITY BUNDLE — leave-one-out, Baujat, influence, funnel + Egger
 #    ma_sensitivity(m, prefix = "acm")  -> saves PNGs and prints results
 # -----------------------------------------------------------------------------
@@ -199,8 +245,7 @@ ma_sensitivity <- function(m, prefix = "outcome", save = TRUE, random = TRUE) {
   if (save) ma_save(loo_plot(), paste0(prefix, "_leave1out"), width = 10,
                     height = 2 + 0.3 * m$k) else loo_plot()
   # Baujat
-  bj <- function() { par(cex.lab = 1.1, font.lab = 2)
-                     meta::baujat(m, bg = "red", cex.studlab = 0.9) }
+  bj <- function() ma_baujat(m)
   if (save) ma_save(bj(), paste0(prefix, "_baujat"), 8, 7) else bj()
   # Funnel + Egger (only meaningful with >= 10 studies)
   fp <- function() meta::funnel(m, studlab = TRUE, bg = "red",

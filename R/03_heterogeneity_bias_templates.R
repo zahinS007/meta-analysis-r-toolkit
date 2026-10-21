@@ -19,7 +19,8 @@ meta::forest(loo, rightcols = c("effect", "ci", "I2"),
        xlab = "Favors INTERVENTION    Favors CONTROL", ff.xlab = "bold")
 
 # --- Baujat (x = contribution to Q; y = influence on pooled effect) ----------
-par(cex.lab = 1.2, font.lab = 2); baujat(m, bg = "red", cex.studlab = 1.1)
+ma_baujat(m)              # labels only influential studies (see ma_toolkit.R)
+# all labels instead: baujat(m, bg = "red", cex.studlab = 0.8)
 
 # --- Subgroups (pre-specify in protocol!) ------------------------------------
 m.sub <- update(m, subgroup = SUBGROUP_COLUMN)
@@ -38,8 +39,9 @@ rm <- rma(yi = m$TE, sei = m$seTE, method = "REML", slab = m$studlab)
 inf <- influence(rm); inf; plot(inf)                 # flagged studies marked *
 
 # --- GOSH (all 2^k - 1 subsets; slow for k > 15) -----------------------------
-g <- gosh(rm, subsets = if (m$k > 15) 1e5 else NA)
+g <- gosh(rm, subsets = 1e5)          # all subsets when 2^k - 1 <= 1e5 (k <= 16)
 plot(g, alpha = 0.1, col = "darkcyan")
+plot(g, out = 3, alpha = 0.4)         # red = subsets that include study 3 (suspected outlier)
 # cluster diagnostics need dmetar:
 # remotes::install_github("MathiasHarrer/dmetar"); dmetar::gosh.diagnostics(g)
 

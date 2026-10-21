@@ -12,13 +12,13 @@ Built on the [`meta`](https://cran.r-project.org/package=meta), [`metafor`](http
 
 | File | Purpose |
 |---|---|
-| [`R/ma_toolkit.R`](R/ma_toolkit.R) | Helper functions: import, RevMan-style forest plots, plot saving, effect-size conversion, median→mean, sensitivity bundle, results sentence |
+| [`R/ma_toolkit.R`](R/ma_toolkit.R) | Helper functions: import, RevMan-style forest plots, plot saving, effect-size conversion, median→mean, clean Baujat and SROC plots, sensitivity bundle, results sentence |
 | [`R/01_pairwise_templates.R`](R/01_pairwise_templates.R) | Binary (`metabin`), continuous (`metacont`), generic OR/RR/HR (`metagen`), subgroups |
 | [`R/02_single_arm_templates.R`](R/02_single_arm_templates.R) | Proportions (`metaprop`), single means (`metamean`), median/IQR → mean (SD) |
 | [`R/03_heterogeneity_bias_templates.R`](R/03_heterogeneity_bias_templates.R) | Leave-one-out, Baujat, influence diagnostics, GOSH, L'Abbé, meta-regression, funnel, Egger, trim-and-fill |
 | [`R/04_network_ma_templates.R`](R/04_network_ma_templates.R) | Frequentist NMA (`netmeta`): network graph, league table, P-scores, node-splitting; Bayesian (`gemtc`) block |
 | [`R/05_diagnostic_ma_templates.R`](R/05_diagnostic_ma_templates.R) | DTA: pooled sensitivity/specificity, bivariate Reitsma model, SROC/AUC, DOR, Deeks' test, comparing two tests |
-| [`R/99_test_all.R`](R/99_test_all.R) | Runs every analysis on simulated data (15 checks) |
+| [`R/99_test_all.R`](R/99_test_all.R) | Runs every analysis on simulated data (16 checks) |
 | [`examples/quickstart.R`](examples/quickstart.R) | A complete analysis in about 20 lines |
 
 ## Quick start
@@ -80,11 +80,11 @@ One Excel workbook, one sheet per outcome, column names without spaces:
 | Subgroup forest plot | Proportion meta-analysis |
 |---|---|
 | <img src="docs/figures/acm_sub.png" width="420"> | <img src="docs/figures/prev_forest.png" width="420"> |
-| **Leave-one-out** | **Baujat plot** |
-| <img src="docs/figures/acm_leave1out.png" width="420"> | <img src="docs/figures/acm_baujat.png" width="420"> |
-| **Meta-regression bubble plot** | **GOSH plot** |
-| <img src="docs/figures/acm_bubble.png" width="420"> | <img src="docs/figures/acm_gosh.png" width="420"> |
-| **Network graph** | **SROC curve (diagnostic accuracy)** |
+| **Leave-one-out** | **Baujat plot** (two discordant trials flagged) |
+| <img src="docs/figures/acm_leave1out.png" width="420"> | <img src="docs/figures/het_baujat.png" width="420"> |
+| **Meta-regression bubble plot** | **GOSH plot** (red = subsets including the outlier) |
+| <img src="docs/figures/acm_bubble.png" width="420"> | <img src="docs/figures/het_gosh.png" width="420"> |
+| **Network graph** | **SROC curve** (bivariate model, 95% confidence + prediction regions) |
 | <img src="docs/figures/nma_net.png" width="420"> | <img src="docs/figures/dta_sroc.png" width="420"> |
 
 All example data are simulated and do not represent real trials.
@@ -95,7 +95,7 @@ Trial Sequential Analysis is run in the Copenhagen Trial Unit's [TSA software](h
 
 ## Tested with
 
-R 4.x · meta 8.5 · metafor 5.2 · netmeta 3.7 · mada 0.5 · estmeansd 1.0. The toolkit detects the `lab.e`/`label.e` rename in meta ≥ 8 automatically.
+R 4.x · meta 8.5 · metafor 4.4–5.2 · netmeta 3.7 · mada 0.5 · estmeansd 1.0. The toolkit detects the `lab.e`/`label.e` rename in meta ≥ 8 automatically.
 
 ## References
 

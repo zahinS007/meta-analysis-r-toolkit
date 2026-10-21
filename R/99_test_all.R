@@ -72,11 +72,29 @@ s <- ma_sensitivity(m.bin, prefix = "acm"); ok("sensitivity bundle")
 mreg <- metareg(m.bin, ~ pct_dm); print(mreg)
 ma_save(bubble(mreg, studlab = TRUE, bg = "red", xlab = "% with DM"), "acm_bubble", 8, 7)
 ok("meta-regression")
-rm <- rma(yi = m.bin$TE, sei = m.bin$seTE, method = "REML", slab = m.bin$studlab)
-g <- gosh(rm, subsets = 2000); ma_save(plot(g, alpha = 0.1, col = "darkcyan"), "acm_gosh", 8, 8)
-ok("GOSH")
 ma_save(labbe(m.bin, studlab = TRUE, bg = "red"), "acm_labbe", 7, 7); ok("L'Abbe")
 tf <- trimfill(m.bin); ok("trim-and-fill")
+
+# Clean heterogeneity example: 10 consistent trials + 2 discordant ones
+# (Hassan 2018 points the other way, Lopez 2022 shows a much larger benefit)
+het <- data.frame(
+  Author  = c("Adams", "Baker", "Chen", "Diaz", "Evans", "Fischer", "Gupta",
+              "Hassan", "Ito", "Jensen", "Khan", "Lopez"),
+  Year    = c(2012, 2013, 2014, 2015, 2016, 2017, 2018, 2018, 2019, 2020, 2021, 2022),
+  n.e     = c(150, 210, 320, 180, 260, 400, 140, 230, 310, 190, 280, 250),
+  event.e = c( 14,  26,  33,  23,  26,  48,  13,  41,  38,  19,  33,  15),
+  n.c     = c(148, 205, 318, 182, 255, 402, 138, 228, 305, 192, 276, 252),
+  event.c = c( 22,  31,  48,  27,  38,  60,  21,  30,  46,  28,  41,  44))
+m.het <- metabin(event.e, n.e, event.c, n.c, data = het, studlab = paste(Author, Year),
+                 sm = "RR", method = "MH", method.tau = "PM", method.random.ci = "HK",
+                 common = FALSE, random = TRUE)
+cat(ma_report(m.het), "\n")
+ma_save(ma_baujat(m.het), "het_baujat", 8, 7); ok("Baujat")
+rm.het <- rma(yi = m.het$TE, sei = m.het$seTE, method = "REML", slab = m.het$studlab)
+g <- gosh(rm.het)                                   # k = 12 -> all 4095 subsets
+ma_save(plot(g, out = which(het$Author == "Lopez"), alpha = 0.4, cex = 0.6),
+        "het_gosh", 8, 8)                           # red = subsets that include Lopez 2022
+ok("GOSH")
 
 # --- NMA ---
 arms <- data.frame(study = rep(paste0("T", 1:8), each = 2),
@@ -97,16 +115,21 @@ ns <- netsplit(nma); print(ns)
 ma_save(meta::forest(ns), "nma_split", 9, 8); ok("network MA")
 
 # --- DTA ---
-dis <- sample(30:120, 10); hea <- sample(80:300, 10)
-dta <- data.frame(study = paste0("D", 1:10), TP = rbinom(10, dis, .85),
-                  FP = rbinom(10, hea, .2))
+# 14 studies simulated on the logit scale with between-study variation and a
+# threshold effect (sensitivity and FPR rise together), as in real DTA reviews
+set.seed(2024)
+kd <- 14
+lsens <- rnorm(kd, qlogis(0.84), 0.6)
+lfpr  <- qlogis(0.13) + 0.7 * (lsens - qlogis(0.84)) + rnorm(kd, 0, 0.5)
+dis <- round(runif(kd, 60, 180)); hea <- round(runif(kd, 150, 450))
+dta <- data.frame(study = paste("Study", LETTERS[1:kd]),
+                  TP = rbinom(kd, dis, plogis(lsens)), FP = rbinom(kd, hea, plogis(lfpr)))
 dta$FN <- dis - dta$TP; dta$TN <- hea - dta$FP
 sens1 <- metaprop(TP, TP + FN, data = dta, studlab = study, method = "GLMM", sm = "PLOGIT")
 spec1 <- metaprop(TN, TN + FP, data = dta, studlab = study, method = "GLMM", sm = "PLOGIT")
 ma_save(meta::forest(sens1, xlim = c(0, 1)), "dta_sens", 10, 5)
 fit1 <- reitsma(dta); print(summary(fit1)$coefficients); print(AUC(fit1))
-ma_save({plot(fit1, xlim = c(0, 1), ylim = c(0, 1)); points(fpr(dta), sens(dta), pch = 2)},
-        "dta_sroc", 7, 7)
+ma_save(ma_sroc(fit1, dta), "dta_sroc", 7, 7)
 dor <- metabin(TP, TP + FN, FP, FP + TN, data = dta, studlab = study, sm = "DOR",
                method = "Inverse", common = FALSE, random = TRUE)
 print(metabias(dor, method.bias = "Deeks")); ok("diagnostic MA")

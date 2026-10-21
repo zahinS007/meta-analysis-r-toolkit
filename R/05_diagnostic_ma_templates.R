@@ -43,12 +43,8 @@ summary(fit1)                        # pooled sens, FPR (1-spec), AUC, I² (Zhou
 AUC(fit1)
 
 # ---- 3. SROC curve ----------------------------------------------------------
-sroc_plot <- function() {
-  plot(fit1, xlim = c(0, 1), ylim = c(0, 1),
-       main = "SROC curve of TEST_A for TARGET_CONDITION")
-  points(fpr(d1), sens(d1), pch = 2, cex = 0.7)
-  legend("bottomright", c("Studies", "Summary estimate"), pch = c(2, 1), bty = "n")
-}
+sroc_plot <- function() ma_sroc(fit1, d1,
+                                main = "SROC curve of TEST_A for TARGET_CONDITION")
 ma_save(sroc_plot(), "TEST_A_sroc", 7, 7)
 
 # ---- 4. Other summary measures ----------------------------------------------
